@@ -85,7 +85,17 @@ const ServiceForm = () => {
 
         metadata: {
           formFields:
-            service.metadata?.formFields || [],
+            (service.metadata?.formFields || []).map((field) => ({
+              ...field,
+              options: Array.isArray(field.options)
+                ? field.options
+                : typeof field.options === 'string'
+                  ? field.options
+                      .split(',')
+                      .map((option) => option.trim())
+                      .filter(Boolean)
+                  : [],
+            })),
 
           priceCalculation:
             service.metadata?.priceCalculation || {
@@ -146,6 +156,7 @@ const ServiceForm = () => {
             label: '',
             type: 'text',
             required: false,
+            options: [],
           },
         ],
       },
@@ -195,6 +206,93 @@ const ServiceForm = () => {
       },
     }));
   };
+
+  // Convert comma-separated options into an array for select fields
+  const handleSelectOptionsChange = (index, value) => {
+    const options = value
+      .split(',')
+      .map((option) => option.trim())
+      .filter(Boolean);
+
+    updateFormField(index, 'options', options);
+  };
+
+  // Preview the actual customer input based on the selected field type
+  const renderFieldPreview = (field) => {
+    const commonClass =
+      'w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-700';
+
+    switch (field.type) {
+      case 'number':
+        return (
+          <input
+            type="number"
+            placeholder={field.label || 'Enter number'}
+            className={commonClass}
+            
+          />
+        );
+
+      case 'date':
+        return (
+          <input
+            type="date"
+            className={commonClass}
+            disabled
+          />
+        );
+
+      case 'time':
+        return (
+          <input
+            type="time"
+            className={commonClass}
+            disabled
+          />
+        );
+
+      case 'textarea':
+        return (
+          <textarea
+            rows="3"
+            placeholder={field.label || 'Enter details'}
+            className={commonClass}
+            disabled
+          />
+        );
+
+      case 'select':
+        return (
+          <select className={commonClass} disabled defaultValue="">
+            <option value="">
+              {field.label
+                ? `Select ${field.label}`
+                : 'Select an option'}
+            </option>
+            {(field.options || []).map((option, optionIndex) => (
+              <option key={optionIndex} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        );
+
+      case 'text':
+      default:
+        return (
+          <input
+            type="text"
+            placeholder={field.label || 'Enter text'}
+            className={commonClass}
+            disabled
+          />
+        );
+    }
+  };
+
+  // ----------------------------------------
+  // PRICE CALCULATION
+  // ----------------------------------------
 
   const handlePriceCalculationChange = (
     e
@@ -805,6 +903,40 @@ const ServiceForm = () => {
 
                         </div>
 
+                      </div>
+
+                      {/* SELECT OPTIONS */}
+                      {field.type === 'select' && (
+                        <div className="mt-4">
+                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                            Options
+                          </label>
+
+                          <input
+                            type="text"
+                            value={(field.options || []).join(', ')}
+                            onChange={(e) =>
+                              handleSelectOptionsChange(
+                                index,
+                                e.target.value
+                              )
+                            }
+                            placeholder="e.g. Small, Medium, Large"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                          />
+
+                          <p className="text-xs text-gray-400 mt-1">
+                            Enter options separated by commas.
+                          </p>
+                        </div>
+                      )}
+
+                      {/* FIELD PREVIEW */}
+                      <div className="mt-4">
+                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                          Customer Field Preview
+                        </label>
+                        {renderFieldPreview(field)}
                       </div>
 
                       <div className="mt-4 flex justify-end">
